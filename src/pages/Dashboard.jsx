@@ -99,7 +99,7 @@ export default function Dashboard() {
     });
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col h-full overflow-y-auto">
       <PageHeader title="Command Center" subtitle="Institutional Trading Dashboard">
         <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={refresh}>
           <RefreshCw className="w-3 h-3" /> Refresh
