@@ -125,12 +125,46 @@ Provide a 2-3 sentence professional analysis explaining the setup rationale, key
 
   const runScan = async () => {
     setScanning(true);
-    const symbols = ["AAPL", "NVDA", "MSFT", "TSLA", "META", "AMZN", "SPY", "QQQ", "AMD", "GOOGL"];
+    const symbols = ["AAPL", "NVDA", "MSFT", "TSLA", "META", "AMZN", "SPY", "QQQ", "AMD", "GOOGL", "GS", "JPM", "XOM", "UNH", "V"];
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an institutional trading AI. Generate 3 high-conviction trade setups for today's market.
-Choose from these symbols: ${symbols.join(", ")}
+      add_context_from_internet: true,
+      prompt: `You are an institutional-grade market scanner used by a hedge fund trading desk. Today's date is ${new Date().toDateString()}.
 
-Return JSON with array "setups" each having: symbol, direction (long/short), confidence_score (50-95), risk_score (10-60), reward_score (50-95), strategy_type (one of: momentum, breakout, mean_reversion, trend_continuation, volume_anomaly), time_horizon (one of: intraday, swing, position), sector, ai_explanation (2-3 sentences), entry_price (realistic price), stop_loss, target_price, risk_reward_ratio`,
+Evaluate the following securities using a comprehensive institutional framework and identify the 4 highest-probability opportunities with favorable risk-adjusted returns. Rank by institutional_quality_score descending.
+
+Universe: ${symbols.join(", ")}
+
+Apply this evaluation framework:
+1. LIQUIDITY ANALYSIS – avg daily volume, relative volume, bid/ask spread, tradability
+2. RELATIVE STRENGTH – performance vs SPY, vs sector ETF, over 5/20/60/252 days
+3. MARKET STRUCTURE – trend direction, higher highs/lows, support/resistance, breakouts, consolidation, volatility compression
+4. OPTIONS FLOW – unusual call/put activity, open interest changes, IV expansion, institutional positioning
+5. VOLUME ANALYSIS – relative volume, accumulation/distribution, dark pool activity
+6. CATALYST ANALYSIS – earnings, analyst upgrades/downgrades, regulatory events, product launches
+7. RISK ANALYSIS – volatility, ATR, gap risk, event risk, correlation risk
+8. INSTITUTIONAL QUALITY FILTER – only include: sufficient liquidity, favorable R/R, clear directional bias, strong relative strength, above-average volume, defined entry/exit
+
+REJECT trades lacking clear edge, liquidity, or risk management.
+
+For each opportunity return:
+- symbol, direction (long/short), sector, strategy_type (momentum/breakout/mean_reversion/trend_continuation/volume_anomaly), time_horizon (intraday/swing/position)
+- confidence_score (0-100): overall setup conviction
+- institutional_quality_score (0-100): institutional-grade quality rating
+- risk_score (0-100): risk level (lower = safer)
+- reward_score (0-100): reward potential
+- liquidity_score (0-100): liquidity quality
+- relative_strength_score (0-100): strength vs market
+- entry_price (realistic current market price)
+- stop_loss (well-defined technical level)
+- target_price (Target 1 - conservative)
+- target_price_2 (Target 2 - extended)
+- risk_reward_ratio (to Target 1)
+- position_sizing (e.g. "1.5% portfolio risk, 500 shares at $X")
+- primary_catalyst (single most important catalyst)
+- institutional_thesis (3-4 sentence professional thesis covering technicals, fundamentals, and risk)
+- ai_explanation (2-3 sentence setup summary)
+
+Return JSON with array "setups". Rank highest institutional_quality_score first. Only include setups scoring 65+ on institutional_quality_score.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -141,29 +175,38 @@ Return JSON with array "setups" each having: symbol, direction (long/short), con
               properties: {
                 symbol: { type: "string" },
                 direction: { type: "string" },
-                confidence_score: { type: "number" },
-                risk_score: { type: "number" },
-                reward_score: { type: "number" },
+                sector: { type: "string" },
                 strategy_type: { type: "string" },
                 time_horizon: { type: "string" },
-                sector: { type: "string" },
-                ai_explanation: { type: "string" },
+                confidence_score: { type: "number" },
+                institutional_quality_score: { type: "number" },
+                risk_score: { type: "number" },
+                reward_score: { type: "number" },
+                liquidity_score: { type: "number" },
+                relative_strength_score: { type: "number" },
                 entry_price: { type: "number" },
                 stop_loss: { type: "number" },
                 target_price: { type: "number" },
-                risk_reward_ratio: { type: "number" }
+                target_price_2: { type: "number" },
+                risk_reward_ratio: { type: "number" },
+                position_sizing: { type: "string" },
+                primary_catalyst: { type: "string" },
+                institutional_thesis: { type: "string" },
+                ai_explanation: { type: "string" }
               }
             }
           }
         }
       }
     });
-    for (const setup of (res.setups || [])) {
+    // Sort by institutional quality score descending
+    const sorted = (res.setups || []).sort((a, b) => (b.institutional_quality_score || 0) - (a.institutional_quality_score || 0));
+    for (const setup of sorted) {
       await base44.entities.Opportunity.create({ ...setup, status: "active" });
     }
     setScanning(false);
     load();
-    toast({ title: `${res.setups?.length || 0} new signals generated`, description: "AI scan complete." });
+    toast({ title: `${sorted.length} institutional signals generated`, description: "AI scan complete — ranked by institutional quality." });
   };
 
   return (
@@ -252,9 +295,10 @@ Return JSON with array "setups" each having: symbol, direction (long/short), con
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                      <span>Confidence</span>
+                      <span>Inst. Quality</span>
+                      <span className="font-mono text-primary">{op.institutional_quality_score ?? op.confidence_score ?? "–"}</span>
                     </div>
-                    <ScoreBar value={op.confidence_score} size="sm" />
+                    <ScoreBar value={op.institutional_quality_score || op.confidence_score} size="sm" />
                     <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1">
                       <span>{op.strategy_type?.replace(/_/g, " ")}</span>
                       <span className="text-primary font-mono">{op.time_horizon}</span>
@@ -308,16 +352,19 @@ Return JSON with array "setups" each having: symbol, direction (long/short), con
                 </div>
               </div>
 
-              {/* Scores */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Score Grid */}
+              <div className="grid grid-cols-3 gap-2">
                 {[
                   { label: "Confidence", val: selected.confidence_score, type: "confidence" },
+                  { label: "Inst. Quality", val: selected.institutional_quality_score, type: "confidence" },
                   { label: "Risk", val: selected.risk_score, type: "risk" },
                   { label: "Reward", val: selected.reward_score, type: "confidence" },
+                  { label: "Liquidity", val: selected.liquidity_score, type: "confidence" },
+                  { label: "Rel. Strength", val: selected.relative_strength_score, type: "confidence" },
                 ].map(s => (
                   <div key={s.label} className="bg-card border border-border rounded-lg p-3">
-                    <div className="text-xs text-muted-foreground mb-2">{s.label}</div>
-                    <div className="text-xl font-mono font-bold text-foreground mb-1">{s.val ?? "–"}</div>
+                    <div className="text-[10px] text-muted-foreground mb-1.5">{s.label}</div>
+                    <div className="text-lg font-mono font-bold text-foreground mb-1">{s.val ?? "–"}</div>
                     <ScoreBar value={s.val || 0} type={s.type} size="sm" showLabel={false} />
                   </div>
                 ))}
@@ -325,23 +372,53 @@ Return JSON with array "setups" each having: symbol, direction (long/short), con
 
               {/* Price Levels */}
               <div className="bg-card border border-border rounded-lg p-4">
-                <div className="text-sm font-semibold text-foreground mb-3">Price Levels</div>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Price Levels</div>
+                <div className="grid grid-cols-5 gap-3">
                   {[
                     { label: "Entry", val: selected.entry_price, color: "text-foreground" },
                     { label: "Stop Loss", val: selected.stop_loss, color: "text-destructive" },
-                    { label: "Target", val: selected.target_price, color: "text-accent" },
-                    { label: "R:R", val: selected.risk_reward_ratio, color: "text-primary" },
+                    { label: "Target 1", val: selected.target_price, color: "text-accent" },
+                    { label: "Target 2", val: selected.target_price_2, color: "text-accent/70" },
+                    { label: "R:R Ratio", val: selected.risk_reward_ratio, color: "text-primary" },
                   ].map(p => (
                     <div key={p.label}>
                       <div className="text-[10px] text-muted-foreground mb-1">{p.label}</div>
                       <div className={cn("text-sm font-mono font-bold", p.color)}>
-                        {p.val ? (p.label === "R:R" ? `1:${p.val.toFixed(2)}` : `$${p.val.toFixed(2)}`) : "–"}
+                        {p.val ? (p.label === "R:R Ratio" ? `1:${p.val.toFixed(2)}` : `$${p.val.toFixed(2)}`) : "–"}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Catalyst & Position Sizing */}
+              {(selected.primary_catalyst || selected.position_sizing) && (
+                <div className="grid grid-cols-2 gap-3">
+                  {selected.primary_catalyst && (
+                    <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
+                      <div className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">Primary Catalyst</div>
+                      <p className="text-xs text-foreground/90">{selected.primary_catalyst}</p>
+                    </div>
+                  )}
+                  {selected.position_sizing && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+                      <div className="text-[10px] font-semibold text-primary uppercase tracking-wider mb-1.5">Position Sizing</div>
+                      <p className="text-xs text-foreground/90">{selected.position_sizing}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Institutional Thesis */}
+              {selected.institutional_thesis && (
+                <div className="bg-secondary border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">Institutional Thesis</span>
+                  </div>
+                  <p className="text-sm text-foreground/90 leading-relaxed">{selected.institutional_thesis}</p>
+                </div>
+              )}
 
               {/* TradingView Chart */}
               <div>
@@ -349,12 +426,12 @@ Return JSON with array "setups" each having: symbol, direction (long/short), con
                 <TradingViewChart symbol={selected.symbol} height={420} interval="D" />
               </div>
 
-              {/* AI Explanation */}
+              {/* AI Setup Summary */}
               {selected.ai_explanation && (
                 <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Zap className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-semibold text-primary">AI Analysis</span>
+                    <span className="text-xs font-semibold text-primary">Setup Summary</span>
                   </div>
                   <p className="text-sm text-foreground/90 leading-relaxed">{selected.ai_explanation}</p>
                 </div>

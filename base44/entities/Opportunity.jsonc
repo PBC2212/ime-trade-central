@@ -14,6 +14,31 @@
       ],
       "description": "Trade direction"
     },
+    "sector": {
+      "type": "string",
+      "description": "Market sector"
+    },
+    "strategy_type": {
+      "type": "string",
+      "enum": [
+        "momentum",
+        "breakout",
+        "mean_reversion",
+        "trend_continuation",
+        "volume_anomaly"
+      ],
+      "description": "Strategy type"
+    },
+    "time_horizon": {
+      "type": "string",
+      "enum": [
+        "intraday",
+        "swing",
+        "position",
+        "long_term"
+      ],
+      "description": "Time horizon"
+    },
     "entry_price": {
       "type": "number",
       "description": "Recommended entry price"
@@ -24,7 +49,11 @@
     },
     "target_price": {
       "type": "number",
-      "description": "Target price"
+      "description": "Target 1 price"
+    },
+    "target_price_2": {
+      "type": "number",
+      "description": "Target 2 price"
     },
     "risk_reward_ratio": {
       "type": "number",
@@ -42,34 +71,33 @@
       "type": "number",
       "description": "Reward score 0-100"
     },
-    "sector": {
-      "type": "string",
-      "description": "Market sector"
+    "institutional_quality_score": {
+      "type": "number",
+      "description": "Institutional quality score 0-100"
     },
-    "time_horizon": {
+    "position_sizing": {
       "type": "string",
-      "enum": [
-        "intraday",
-        "swing",
-        "position",
-        "long_term"
-      ],
-      "description": "Time horizon"
+      "description": "Position sizing recommendation"
     },
-    "strategy_type": {
+    "primary_catalyst": {
       "type": "string",
-      "enum": [
-        "momentum",
-        "breakout",
-        "mean_reversion",
-        "trend_continuation",
-        "volume_anomaly"
-      ],
-      "description": "Strategy type"
+      "description": "Primary catalyst driving the trade"
+    },
+    "institutional_thesis": {
+      "type": "string",
+      "description": "Full institutional thesis"
     },
     "ai_explanation": {
       "type": "string",
       "description": "AI reasoning for the trade"
+    },
+    "liquidity_score": {
+      "type": "number",
+      "description": "Liquidity score 0-100"
+    },
+    "relative_strength_score": {
+      "type": "number",
+      "description": "Relative strength score 0-100"
     },
     "technical_indicators": {
       "type": "object",
