@@ -15,15 +15,6 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 
-const MOCK_EQUITY = [
-  { date: "Jan", value: 100000 }, { date: "Feb", value: 103200 },
-  { date: "Mar", value: 101800 }, { date: "Apr", value: 107400 },
-  { date: "May", value: 114200 }, { date: "Jun", value: 111800 },
-  { date: "Jul", value: 118900 }, { date: "Aug", value: 122400 },
-  { date: "Sep", value: 119100 }, { date: "Oct", value: 127300 },
-  { date: "Nov", value: 133100 }, { date: "Dec", value: 141600 },
-];
-
 const directionBg = (d) => d === "long"
   ? "bg-accent/10 text-accent border-accent/30"
   : "bg-destructive/10 text-destructive border-destructive/30";
@@ -98,6 +89,15 @@ export default function Dashboard() {
     ? Math.round((closedTrades.filter(t => (t.pnl || 0) > 0).length / closedTrades.length) * 100)
     : 0;
 
+  // Build cumulative P&L curve from real closed trades sorted by entry date
+  let running = 0;
+  const equityData = [...closedTrades]
+    .sort((a, b) => (a.entry_date || "").localeCompare(b.entry_date || ""))
+    .map(t => {
+      running += t.pnl || 0;
+      return { date: t.symbol, value: running };
+    });
+
   return (
     <div className="flex flex-col min-h-full">
       <PageHeader title="Command Center" subtitle="Institutional Trading Dashboard">
@@ -135,20 +135,12 @@ export default function Dashboard() {
         {/* Stat Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            label="Portfolio Equity"
-            value="$141,600"
-            change={41.6}
-            changeType="positive"
-            sub="All-time"
+            label="Total P&L"
+            value={`${totalPnl >= 0 ? "+$" : "-$"}${Math.abs(totalPnl).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+            changeType={totalPnl >= 0 ? "positive" : "negative"}
+            sub="All closed trades"
             icon={TrendingUp}
             accent
-          />
-          <StatCard
-            label="Realized P&L"
-            value={`${totalPnl >= 0 ? "+$" : "-$"}${Math.abs(totalPnl).toFixed(0)}`}
-            changeType={totalPnl >= 0 ? "positive" : "negative"}
-            sub="Closed trades"
-            icon={Target}
           />
           <StatCard
             label="Win Rate"
@@ -162,6 +154,7 @@ export default function Dashboard() {
             sub={`${opportunities.filter(o => o.status === "active").length} active signals`}
             icon={Shield}
           />
+
         </div>
 
         {/* Equity Chart + Opportunities */}
@@ -169,30 +162,36 @@ export default function Dashboard() {
           <div className="lg:col-span-2 bg-card border border-border rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <div className="text-sm font-semibold text-foreground">Equity Curve</div>
-                <div className="text-xs text-muted-foreground">12-month performance</div>
+                <div className="text-sm font-semibold text-foreground">Cumulative P&L Curve</div>
+                <div className="text-xs text-muted-foreground">Based on closed trades</div>
               </div>
-              <Badge variant="outline" className="text-accent border-accent/30 text-xs">+41.6% YTD</Badge>
+              <Badge variant="outline" className={cn("text-xs", totalPnl >= 0 ? "text-accent border-accent/30" : "text-destructive border-destructive/30")}>
+                {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(0)} total
+              </Badge>
             </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={MOCK_EQUITY}>
-                <defs>
-                  <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(187,92%,50%)" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="hsl(187,92%,50%)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,16%)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(222,47%,10%)", border: "1px solid hsl(222,30%,16%)", borderRadius: 6, fontSize: 11 }}
-                  labelStyle={{ color: "hsl(210,40%,80%)" }}
-                  formatter={v => [`$${v.toLocaleString()}`, "Equity"]}
-                />
-                <Area type="monotone" dataKey="value" stroke="hsl(187,92%,50%)" strokeWidth={2} fill="url(#eqGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {equityData.length === 0 ? (
+              <div className="flex items-center justify-center h-48 text-xs text-muted-foreground">No closed trades yet</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={equityData}>
+                  <defs>
+                    <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(187,92%,50%)" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="hsl(187,92%,50%)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,16%)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} axisLine={false} tickLine={false} tickFormatter={v => `$${v.toFixed(0)}`} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(222,47%,10%)", border: "1px solid hsl(222,30%,16%)", borderRadius: 6, fontSize: 11 }}
+                    labelStyle={{ color: "hsl(210,40%,80%)" }}
+                    formatter={v => [`$${v.toLocaleString()}`, "Cumulative P&L"]}
+                  />
+                  <Area type="monotone" dataKey="value" stroke="hsl(187,92%,50%)" strokeWidth={2} fill="url(#eqGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* Active Signals */}
