@@ -16,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
+import TradingViewChart from "@/components/TradingViewChart";
 
 const directionBg = (d) => d === "long"
   ? "bg-accent/10 text-accent border-accent/30"
@@ -340,6 +341,12 @@ Return JSON with array "setups" each having: symbol, direction (long/short), con
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* TradingView Chart */}
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Price Chart</div>
+                <TradingViewChart symbol={selected.symbol} height={420} interval="D" />
               </div>
 
               {/* AI Explanation */}

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Plus, Trash2, Edit2, Eye, Search, Star, TrendingUp, TrendingDown, Loader2, Bell } from "lucide-react";
+import TradingViewChart from "@/components/TradingViewChart";
 
 const EMPTY = {
   symbol: "", watchlist_name: "Default", notes: "", alert_price: "", current_price: "", entry_price: "", direction: "neutral", sector: "", tags: []
@@ -212,6 +213,12 @@ export default function Watchlist() {
                     <div className="text-lg font-mono font-bold text-foreground">{item.val}</div>
                   </div>
                 ))}
+              </div>
+
+              {/* TradingView Chart */}
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Price Chart</div>
+                <TradingViewChart symbol={selected.symbol} height={420} interval="D" />
               </div>
 
               {selected.alert_price && (
