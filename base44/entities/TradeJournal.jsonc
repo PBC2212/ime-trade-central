@@ -1,0 +1,88 @@
+{
+  "name": "TradeJournal",
+  "type": "object",
+  "properties": {
+    "symbol": {
+      "type": "string",
+      "description": "Ticker symbol"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "long",
+        "short"
+      ]
+    },
+    "entry_price": {
+      "type": "number"
+    },
+    "exit_price": {
+      "type": "number"
+    },
+    "quantity": {
+      "type": "number"
+    },
+    "entry_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "exit_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "pnl": {
+      "type": "number",
+      "description": "Profit/loss amount"
+    },
+    "pnl_percent": {
+      "type": "number",
+      "description": "Profit/loss percentage"
+    },
+    "strategy": {
+      "type": "string"
+    },
+    "setup_type": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "screenshots": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ai_review": {
+      "type": "string",
+      "description": "AI-generated trade review"
+    },
+    "lessons_learned": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Self-rating 1-5"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "cancelled"
+      ],
+      "default": "open"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "symbol",
+    "direction",
+    "entry_price"
+  ]
+}

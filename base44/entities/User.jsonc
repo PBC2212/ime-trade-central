@@ -1,0 +1,37 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "trader"
+      ],
+      "default": "trader"
+    },
+    "portfolio_equity": {
+      "type": "number",
+      "default": 100000
+    },
+    "risk_tolerance": {
+      "type": "string",
+      "enum": [
+        "conservative",
+        "moderate",
+        "aggressive"
+      ],
+      "default": "moderate"
+    },
+    "preferred_sectors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "default_position_size": {
+      "type": "number",
+      "default": 2
+    }
+  }
+}

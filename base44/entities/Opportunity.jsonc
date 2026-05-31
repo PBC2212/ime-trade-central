@@ -1,0 +1,95 @@
+{
+  "name": "Opportunity",
+  "type": "object",
+  "properties": {
+    "symbol": {
+      "type": "string",
+      "description": "Ticker symbol"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "long",
+        "short"
+      ],
+      "description": "Trade direction"
+    },
+    "entry_price": {
+      "type": "number",
+      "description": "Recommended entry price"
+    },
+    "stop_loss": {
+      "type": "number",
+      "description": "Stop loss price"
+    },
+    "target_price": {
+      "type": "number",
+      "description": "Target price"
+    },
+    "risk_reward_ratio": {
+      "type": "number",
+      "description": "Risk/reward ratio"
+    },
+    "confidence_score": {
+      "type": "number",
+      "description": "AI confidence 0-100"
+    },
+    "risk_score": {
+      "type": "number",
+      "description": "Risk score 0-100"
+    },
+    "reward_score": {
+      "type": "number",
+      "description": "Reward score 0-100"
+    },
+    "sector": {
+      "type": "string",
+      "description": "Market sector"
+    },
+    "time_horizon": {
+      "type": "string",
+      "enum": [
+        "intraday",
+        "swing",
+        "position",
+        "long_term"
+      ],
+      "description": "Time horizon"
+    },
+    "strategy_type": {
+      "type": "string",
+      "enum": [
+        "momentum",
+        "breakout",
+        "mean_reversion",
+        "trend_continuation",
+        "volume_anomaly"
+      ],
+      "description": "Strategy type"
+    },
+    "ai_explanation": {
+      "type": "string",
+      "description": "AI reasoning for the trade"
+    },
+    "technical_indicators": {
+      "type": "object",
+      "description": "Key technical indicators"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "triggered",
+        "stopped",
+        "target_hit",
+        "expired"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "symbol",
+    "direction",
+    "confidence_score"
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "name": "WatchlistItem",
+  "type": "object",
+  "properties": {
+    "symbol": {
+      "type": "string",
+      "description": "Ticker symbol"
+    },
+    "watchlist_name": {
+      "type": "string",
+      "default": "Default",
+      "description": "Watchlist group name"
+    },
+    "notes": {
+      "type": "string",
+      "description": "User notes"
+    },
+    "alert_price": {
+      "type": "number",
+      "description": "Price alert level"
+    },
+    "current_price": {
+      "type": "number",
+      "description": "Last known price"
+    },
+    "entry_price": {
+      "type": "number",
+      "description": "Entry price if tracked"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "long",
+        "short",
+        "neutral"
+      ]
+    },
+    "sector": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "symbol"
+  ]
+}
