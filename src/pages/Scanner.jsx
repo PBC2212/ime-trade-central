@@ -78,6 +78,7 @@ export default function Scanner() {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm("Delete this signal? This cannot be undone.")) return;
     await base44.entities.Opportunity.delete(id);
     if (selected?.id === id) setSelected(null);
     load();
@@ -96,7 +97,9 @@ export default function Scanner() {
       reward_score: parseFloat(form.reward_score) || undefined,
     };
     if (editTarget) {
-      await base44.entities.Opportunity.update(editTarget.id, payload);
+      const updated = await base44.entities.Opportunity.update(editTarget.id, payload);
+      // Keep detail panel in sync
+      if (selected?.id === editTarget.id) setSelected({ ...selected, ...payload });
     } else {
       await base44.entities.Opportunity.create(payload);
     }
