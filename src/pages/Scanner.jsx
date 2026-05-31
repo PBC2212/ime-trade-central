@@ -167,7 +167,7 @@ Return JSON with array "setups" each having: symbol, direction (long/short), con
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       <PageHeader title="Opportunity Scanner" subtitle="AI-powered trade signal detection">
         <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={openCreate}>
           <Plus className="w-3 h-3" /> Add Signal
@@ -178,7 +178,7 @@ Return JSON with array "setups" each having: symbol, direction (long/short), con
         </Button>
       </PageHeader>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         {/* List Panel */}
         <div className="w-80 flex-shrink-0 border-r border-border flex flex-col">
           {/* Filters */}
@@ -267,7 +267,7 @@ Return JSON with array "setups" each having: symbol, direction (long/short), con
         </div>
 
         {/* Detail Panel */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {!selected ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center p-8">
               <Target className="w-12 h-12 text-muted-foreground/20" />
