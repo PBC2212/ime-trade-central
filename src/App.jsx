@@ -18,6 +18,7 @@ import Watchlist from '@/pages/Watchlist';
 import Journal from '@/pages/Journal';
 import Analytics from '@/pages/Analytics';
 import Assistant from '@/pages/Assistant';
+import Broker from '@/pages/Broker';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +57,7 @@ const AuthenticatedApp = () => {
           <Route path="/journal" element={<Journal />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/assistant" element={<Assistant />} />
+          <Route path="/broker" element={<Broker />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
