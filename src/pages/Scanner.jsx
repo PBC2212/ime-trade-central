@@ -128,43 +128,76 @@ Provide a 2-3 sentence professional analysis explaining the setup rationale, key
     const symbols = ["AAPL", "NVDA", "MSFT", "TSLA", "META", "AMZN", "SPY", "QQQ", "AMD", "GOOGL", "GS", "JPM", "XOM", "UNH", "V"];
     const res = await base44.integrations.Core.InvokeLLM({
       add_context_from_internet: true,
-      prompt: `You are an institutional-grade market scanner used by a hedge fund trading desk. Today's date is ${new Date().toDateString()}.
-
-Evaluate the following securities using a comprehensive institutional framework and identify the 4 highest-probability opportunities with favorable risk-adjusted returns. Rank by institutional_quality_score descending.
+      prompt: `You are a senior portfolio manager at a top-tier hedge fund. Today is ${new Date().toDateString()}. Your mandate: MAXIMUM WIN RATE through extreme selectivity and multi-confirmation filtering.
 
 Universe: ${symbols.join(", ")}
 
-Apply this evaluation framework:
-1. LIQUIDITY ANALYSIS – avg daily volume, relative volume, bid/ask spread, tradability
-2. RELATIVE STRENGTH – performance vs SPY, vs sector ETF, over 5/20/60/252 days
-3. MARKET STRUCTURE – trend direction, higher highs/lows, support/resistance, breakouts, consolidation, volatility compression
-4. OPTIONS FLOW – unusual call/put activity, open interest changes, IV expansion, institutional positioning
-5. VOLUME ANALYSIS – relative volume, accumulation/distribution, dark pool activity
-6. CATALYST ANALYSIS – earnings, analyst upgrades/downgrades, regulatory events, product launches
-7. RISK ANALYSIS – volatility, ATR, gap risk, event risk, correlation risk
-8. INSTITUTIONAL QUALITY FILTER – only include: sufficient liquidity, favorable R/R, clear directional bias, strong relative strength, above-average volume, defined entry/exit
+═══ MANDATORY PRE-FILTERS (ALL must pass or REJECT the setup) ═══
 
-REJECT trades lacking clear edge, liquidity, or risk management.
+✅ MARKET REGIME CHECK
+- Is SPY above its 200-day MA? If NO → only accept short setups or reject longs entirely.
+- Is the VIX elevated (>25)? If YES → tighten stops, reduce position size, prefer mean-reversion over momentum.
+- What is the prevailing macro trend (bull/bear/sideways)? Only trade WITH it.
 
-For each opportunity return:
-- symbol, direction (long/short), sector, strategy_type (momentum/breakout/mean_reversion/trend_continuation/volume_anomaly), time_horizon (intraday/swing/position)
-- confidence_score (0-100): overall setup conviction
-- institutional_quality_score (0-100): institutional-grade quality rating
-- risk_score (0-100): risk level (lower = safer)
-- reward_score (0-100): reward potential
-- liquidity_score (0-100): liquidity quality
-- relative_strength_score (0-100): strength vs market
-- entry_price (realistic current market price)
-- stop_loss (well-defined technical level)
-- target_price (Target 1 - conservative)
-- target_price_2 (Target 2 - extended)
-- risk_reward_ratio (to Target 1)
-- position_sizing (e.g. "1.5% portfolio risk, 500 shares at $X")
-- primary_catalyst (single most important catalyst)
-- institutional_thesis (3-4 sentence professional thesis covering technicals, fundamentals, and risk)
-- ai_explanation (2-3 sentence setup summary)
+✅ MULTI-TIMEFRAME ALIGNMENT (required for entry)
+- Weekly trend must AGREE with daily trend direction.
+- Daily setup must AGREE with 4H momentum direction.
+- Minimum 2 of 3 timeframes (weekly/daily/4H) must confirm the trade direction.
+- DO NOT enter counter-trend trades unless mean-reversion score is exceptional (>85).
 
-Return JSON with array "setups". Rank highest institutional_quality_score first. Only include setups scoring 65+ on institutional_quality_score.`,
+✅ SECTOR CONFIRMATION
+- The stock's sector ETF must be in an uptrend for longs (downtrend for shorts).
+- Stock must outperform its sector ETF on 5-day AND 20-day basis for longs.
+- Avoid longs in the 2 weakest-performing sectors of the past 20 days.
+
+✅ ENTRY QUALITY GATE
+- Only enter longs on pullbacks to support OR confirmed breakouts with volume > 1.5x average.
+- Avoid chasing extended moves (price >5% above nearest support = skip).
+- Prefer setups in volatility compression zones (tight Bollinger Bands, low ATR% vs 20-day avg).
+- Skip ALL setups on major macro event days (FOMC, CPI, NFP).
+
+✅ INSTITUTIONAL QUALITY GATE (score ≥75 required)
+- Sufficient liquidity (ADV > 5M shares)
+- Risk/reward ≥ 2:1 minimum
+- Clear directional bias with defined technical catalyst
+- Relative strength rank top-25% vs SPY over 20 days
+- Volume confirmation on last 2-3 sessions
+- Options flow confirming direction (net call buying for longs, net put buying for shorts)
+
+═══ SCORING FRAMEWORK ═══
+1. LIQUIDITY (0-100): ADV, relative volume, bid/ask quality
+2. RELATIVE STRENGTH (0-100): vs SPY + sector, 5/20/60/252-day basis
+3. MARKET STRUCTURE (0-100): trend quality, S/R levels, breakout validity
+4. OPTIONS FLOW (0-100): unusual activity, OI changes, IV signals
+5. VOLUME QUALITY (0-100): accumulation/distribution, dark pool, conviction
+6. CATALYST STRENGTH (0-100): magnitude and timing of primary catalyst
+7. RISK PROFILE (0-100): lower = safer — volatility, gap risk, event risk
+8. ENTRY TIMING (0-100): pullback quality, compression, confirmation
+
+═══ OUTPUT FORMAT ═══
+Return only the TOP 3 highest-conviction setups that pass ALL pre-filters. If fewer than 3 pass, return only those that qualify. Quality over quantity.
+
+For each setup return:
+- symbol, direction (long/short), sector
+- strategy_type (momentum/breakout/mean_reversion/trend_continuation/volume_anomaly)
+- time_horizon (intraday/swing/position)
+- confidence_score (0-100)
+- institutional_quality_score (0-100) — must be ≥75
+- risk_score (0-100) — risk level, lower is safer
+- reward_score (0-100)
+- liquidity_score (0-100)
+- relative_strength_score (0-100)
+- entry_price (realistic pullback/breakout price, NOT current extended price)
+- stop_loss (ATR-based technical level, tight but logical)
+- target_price (Target 1 — first key resistance/support, conservative)
+- target_price_2 (Target 2 — extended move target)
+- risk_reward_ratio (to Target 1, minimum 2.0)
+- position_sizing ("X% portfolio risk, Y shares at $Z — scale in Z% at entry, Z% on confirmation")
+- primary_catalyst (most important near-term catalyst with expected timing)
+- institutional_thesis (4-5 sentences: macro context, technicals, fundamentals, options signal, risk factors)
+- ai_explanation (2-3 sentences: concise setup summary for quick review)
+
+Return JSON with array "setups". Rank by institutional_quality_score descending. REJECT any setup below 75.`,
       response_json_schema: {
         type: "object",
         properties: {
