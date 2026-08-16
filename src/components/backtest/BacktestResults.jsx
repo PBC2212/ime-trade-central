@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Activity, Target, Zap, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, Target, Zap, BarChart3, AlertTriangle } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -36,8 +36,26 @@ export default function BacktestResults({ result }) {
     equity: p.equity,
   }));
 
+  const MIN_TRADES = 30;
+  const isSmallSample = total_trades < MIN_TRADES;
+  const sampleLabel =
+    total_trades < 10 ? "Insufficient sample — results are not statistically meaningful"
+    : total_trades < MIN_TRADES ? "Small sample — treat results with caution"
+    : null;
+
   return (
     <div className="space-y-4">
+      {/* Sample-size warning */}
+      {isSmallSample && sampleLabel && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3.5 py-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <span className="font-semibold text-amber-500">Small Sample Warning: </span>
+            <span className="text-muted-foreground">{sampleLabel} Only {total_trades} trade{total_trades === 1 ? "" : "s"} were simulated — need {MIN_TRADES}+ for a reliable read on edge.</span>
+          </div>
+        </div>
+      )}
+
       {/* Metric cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <MetricCard
