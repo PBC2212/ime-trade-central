@@ -36,7 +36,7 @@ export default function Analytics() {
       .finally(() => setLoading(false));
   }, []);
 
-  const closed = trades.filter(t => t.status === "closed");
+  const closed = trades.filter(t => t.status === "closed").reverse();
   const totalPnl = closed.reduce((a, t) => a + (t.pnl || 0), 0);
   const winners = closed.filter(t => (t.pnl || 0) > 0);
   const losers = closed.filter(t => (t.pnl || 0) <= 0);
