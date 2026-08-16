@@ -120,8 +120,11 @@ Direction: ${form.direction}, Strategy: ${form.strategy_type}, Horizon: ${form.t
 Entry: ${form.entry_price || "TBD"}, Stop: ${form.stop_loss || "TBD"}, Target: ${form.target_price || "TBD"}
 
 Provide a 2-3 sentence professional analysis explaining the setup rationale, key technical levels, and risk factors.`,
+    }).catch(err => {
+      toast({ title: "AI analysis failed", description: err.message, variant: "destructive" });
+      return null;
     });
-    setForm(f => ({ ...f, ai_explanation: res }));
+    if (res) setForm(f => ({ ...f, ai_explanation: res }));
     setGeneratingAI(false);
   };
 
@@ -302,13 +305,22 @@ Return JSON: { "setups": [ ... ] }`,
     if (!res) return;
 
     const sorted = (res.setups || []).sort((a, b) => (b.institutional_quality_score || 0) - (a.institutional_quality_score || 0));
-    await Promise.all(sorted.map(setup =>
-      base44.entities.Opportunity.create({ ...setup, status: "active" })
-    ));
+    let saveError = null;
+    try {
+      await Promise.all(sorted.map(setup =>
+        base44.entities.Opportunity.create({ ...setup, status: "active" })
+      ));
+    } catch (err) {
+      saveError = err;
+    }
     setScanning(false);
     setScanProgress(null);
     load();
-    toast({ title: `${sorted.length} institutional signals generated`, description: `${passing.length}/${symbols.length} symbols passed quant filter → AI analysis.` });
+    if (saveError) {
+      toast({ title: "Some signals failed to save", description: saveError.message, variant: "destructive" });
+    } else {
+      toast({ title: `${sorted.length} institutional signals generated`, description: `${passing.length}/${symbols.length} symbols passed quant filter → AI analysis.` });
+    }
   };
 
   return (
