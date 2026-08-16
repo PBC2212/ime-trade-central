@@ -9,6 +9,7 @@ import {
   Bot, Send, Plus, Loader2, MessageSquare, Trash2, Clock
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import ToolCallDisplay from "@/components/assistant/ToolCallDisplay";
 
 function MessageBubble({ message }) {
   const isUser = message.role === "user";
@@ -34,6 +35,13 @@ function MessageBubble({ message }) {
             >
               {message.content}
             </ReactMarkdown>
+          )}
+          {message.tool_calls?.length > 0 && (
+            <div className="space-y-0.5">
+              {message.tool_calls.map((tc, i) => (
+                <ToolCallDisplay key={i} toolCall={tc} />
+              ))}
+            </div>
           )}
         </div>
       </div>
