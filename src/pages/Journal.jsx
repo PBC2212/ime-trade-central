@@ -54,6 +54,7 @@ export default function Journal() {
     setSaving(true);
     const payload = {
       ...form,
+      symbol: form.symbol.trim().toUpperCase(),
       entry_price: parseFloat(form.entry_price) || undefined,
       exit_price: parseFloat(form.exit_price) || undefined,
       quantity: parseFloat(form.quantity) || undefined,
@@ -376,7 +377,7 @@ Provide a 2-3 paragraph professional review covering: execution quality, setup v
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button size="sm" onClick={handleSave} disabled={saving || !form.symbol}>
+            <Button size="sm" onClick={handleSave} disabled={saving || !form.symbol.trim()}>
               {saving && <Loader2 className="w-3 h-3 animate-spin mr-1" />} Save Trade
             </Button>
           </DialogFooter>
