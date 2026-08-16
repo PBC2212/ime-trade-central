@@ -3,7 +3,7 @@ import { Link, useLocation, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Scan, BookOpen, Eye, BarChart2, Bot,
-  ChevronLeft, ChevronRight, LogOut, TrendingUp, Briefcase, ShieldAlert
+  ChevronLeft, ChevronRight, LogOut, TrendingUp, Briefcase, ShieldAlert, FlaskConical
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
@@ -16,6 +16,7 @@ const navItems = [
   { icon: Bot, label: "AI Assistant", path: "/assistant" },
   { icon: Briefcase, label: "Broker", path: "/broker" },
   { icon: ShieldAlert, label: "Risk Desk", path: "/risk-desk" },
+  { icon: FlaskConical, label: "Backtest", path: "/backtest" },
 ];
 
 export default function Layout() {

@@ -1,0 +1,189 @@
+{
+  "name": "Backtest",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Backtest display name"
+    },
+    "strategy_type": {
+      "type": "string",
+      "enum": [
+        "trend_continuation",
+        "breakout",
+        "mean_reversion"
+      ],
+      "description": "Strategy tested"
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Symbols tested"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Backtest start date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Backtest end date"
+    },
+    "initial_capital": {
+      "type": "number",
+      "description": "Starting capital"
+    },
+    "position_size_pct": {
+      "type": "number",
+      "description": "Percent allocated per trade"
+    },
+    "max_hold_days": {
+      "type": "number",
+      "description": "Max holding period in bars"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "failed"
+      ],
+      "default": "completed"
+    },
+    "total_trades": {
+      "type": "number",
+      "description": "Total simulated trades"
+    },
+    "winning_trades": {
+      "type": "number",
+      "description": "Profitable trades"
+    },
+    "win_rate": {
+      "type": "number",
+      "description": "Win rate percentage"
+    },
+    "total_return_pct": {
+      "type": "number",
+      "description": "Total return percentage"
+    },
+    "max_drawdown_pct": {
+      "type": "number",
+      "description": "Maximum drawdown percentage"
+    },
+    "profit_factor": {
+      "type": "number",
+      "description": "Gross profit / gross loss"
+    },
+    "sharpe_ratio": {
+      "type": "number",
+      "description": "Risk-adjusted return"
+    },
+    "avg_trade_pct": {
+      "type": "number",
+      "description": "Average trade return percentage"
+    },
+    "final_equity": {
+      "type": "number",
+      "description": "Ending equity"
+    },
+    "equity_curve": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "equity": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Equity curve data points"
+    },
+    "trades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "entry_date": {
+            "type": "string"
+          },
+          "entry_price": {
+            "type": "number"
+          },
+          "exit_date": {
+            "type": "string"
+          },
+          "exit_price": {
+            "type": "number"
+          },
+          "return_pct": {
+            "type": "number"
+          },
+          "hold_days": {
+            "type": "number"
+          },
+          "exit_reason": {
+            "type": "string"
+          },
+          "pnl": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Simulated trade records"
+    }
+  },
+  "required": [
+    "name",
+    "strategy_type",
+    "symbols"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
