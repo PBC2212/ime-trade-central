@@ -44,7 +44,11 @@ export default function Backtest() {
           title: "Backtest complete",
           description: `${data.result.total_trades} trades · ${data.result.win_rate}% win rate · ${data.result.total_return_pct >= 0 ? "+" : ""}${data.result.total_return_pct}% return`,
         });
-        loadHistory();
+        if (data.save_error) {
+          toast({ title: "Save failed", description: "Results shown but not saved to history", variant: "destructive" });
+        } else {
+          loadHistory();
+        }
       } else {
         setError("No results returned from engine");
       }

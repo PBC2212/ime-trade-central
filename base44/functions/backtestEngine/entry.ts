@@ -301,8 +301,6 @@ Deno.serve(async (req) => {
       allTrades.push(...t);
     }
 
-    const metrics = computeMetrics(allTrades, initial_capital);
-
     // Filter trades to the backtest date range
     const filteredTrades = allTrades.filter(t => new Date(t.exit_date) >= new Date(start_date));
     const filteredMetrics = computeMetrics(filteredTrades, initial_capital);
@@ -328,7 +326,8 @@ Deno.serve(async (req) => {
           trades: filteredTrades,
         });
       } catch (e) {
-        // Non-fatal — return results even if save fails
+        // Non-fatal — return results even if save fails, but surface the failure
+        return Response.json({ result, saved: null, save_error: e.message, symbols_fetched: valid.map(v => v.symbol) });
       }
     }
 
