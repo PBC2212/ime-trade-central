@@ -19,6 +19,7 @@ import Journal from '@/pages/Journal';
 import Analytics from '@/pages/Analytics';
 import Assistant from '@/pages/Assistant';
 import Broker from '@/pages/Broker';
+import RiskDesk from '@/pages/RiskDesk';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/assistant" element={<Assistant />} />
           <Route path="/broker" element={<Broker />} />
+          <Route path="/risk-desk" element={<RiskDesk />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
