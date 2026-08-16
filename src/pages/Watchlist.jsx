@@ -69,6 +69,8 @@ export default function Watchlist() {
     setSaving(true);
     const payload = {
       ...form,
+      symbol: form.symbol.trim().toUpperCase(),
+      tags: form.tags || [],
       alert_price: parseFloat(form.alert_price) || undefined,
       current_price: parseFloat(form.current_price) || undefined,
       entry_price: parseFloat(form.entry_price) || undefined,
@@ -305,9 +307,13 @@ export default function Watchlist() {
             <Label className="text-xs text-muted-foreground">Notes</Label>
             <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="text-xs mt-1 bg-secondary border-border h-20 resize-none" placeholder="Analysis notes..." />
           </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Tags (comma-separated)</Label>
+            <Input value={(form.tags || []).join(", ")} onChange={e => setForm(p => ({ ...p, tags: e.target.value.split(",").map(t => t.trim()).filter(Boolean) }))} className="h-8 text-xs mt-1 bg-secondary border-border" placeholder="earnings, breakout, momentum" />
+          </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button size="sm" onClick={handleSave} disabled={saving || !form.symbol}>
+            <Button size="sm" onClick={handleSave} disabled={saving || !form.symbol.trim()}>
               {saving && <Loader2 className="w-3 h-3 animate-spin mr-1" />} Save
             </Button>
           </DialogFooter>
