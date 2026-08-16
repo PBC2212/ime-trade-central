@@ -317,7 +317,8 @@ Return JSON: { "setups": [ ... ] }`,
     });
     if (!res) return;
 
-    const sorted = (res.setups || []).sort((a, b) => (b.institutional_quality_score || 0) - (a.institutional_quality_score || 0));
+    const qualified = (res.setups || []).filter(s => s && s.symbol && (s.institutional_quality_score || 0) >= 70);
+    const sorted = qualified.sort((a, b) => (b.institutional_quality_score || 0) - (a.institutional_quality_score || 0)).slice(0, 5);
     let saveError = null;
     try {
       await Promise.all(sorted.map(setup =>
