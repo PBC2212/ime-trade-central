@@ -84,7 +84,7 @@ export default function PortfolioRiskPanel() {
         <RiskKpiCard label="Sizing Multiplier" value={data.sizing_multiplier} unit="×" icon={ShieldAlert}
           tone={sizeTone} sub={data.sizing_multiplier === 0 ? "HALT" : data.sizing_multiplier < 1 ? "Reduced" : "Normal"} />
         <RiskKpiCard label="Status" value={data.drawdown_status?.replace(/_/g, " ")} icon={Activity}
-          tone={statusTone} sub={`Equity $${data.equity?.toLocaleString()}`} />
+          tone={statusTone} sub={`Equity $${Number(data.equity || 0).toLocaleString()}`} />
       </div>
 
       <div className="border border-border rounded-lg overflow-hidden">

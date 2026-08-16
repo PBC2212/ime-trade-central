@@ -98,13 +98,17 @@ Deno.serve(async (req) => {
     if (action === "cancel_order") {
       const { order_id } = params;
       const base = (creds.base_url || APP_BASE_URL).replace(/\/v2\/?$/, "");
-      await fetch(`${base}/v2/orders/${order_id}`, {
+      const res = await fetch(`${base}/v2/orders/${order_id}`, {
         method: "DELETE",
         headers: {
           "APCA-API-KEY-ID": creds.api_key,
           "APCA-API-SECRET-KEY": creds.secret_key,
         },
       });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Alpaca cancel failed (${res.status}): ${err || res.statusText}`);
+      }
       return Response.json({ success: true });
     }
 
@@ -118,6 +122,10 @@ Deno.serve(async (req) => {
           "APCA-API-SECRET-KEY": creds.secret_key,
         },
       });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Alpaca close position failed (${res.status}): ${err || res.statusText}`);
+      }
       const data = await res.json();
       return Response.json({ order: data });
     }

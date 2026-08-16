@@ -39,6 +39,7 @@ export default function Journal() {
     setLoading(true);
     base44.entities.TradeJournal.list("-created_date", 100)
       .then(setTrades)
+      .catch(() => setTrades([]))
       .finally(() => setLoading(false));
   };
 

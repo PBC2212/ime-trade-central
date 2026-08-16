@@ -56,6 +56,7 @@ export default function Scanner() {
     setLoading(true);
     base44.entities.Opportunity.list("-created_date", 50)
       .then(setOpportunities)
+      .catch(() => setOpportunities([]))
       .finally(() => setLoading(false));
   };
 

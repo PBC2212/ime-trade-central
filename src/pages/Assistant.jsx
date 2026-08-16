@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 import {
   Bot, Send, Plus, Loader2, MessageSquare, Trash2, Clock
 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 function MessageBubble({ message }) {
   const isUser = message.role === "user";
@@ -54,6 +55,7 @@ export default function Assistant() {
       .then(convs => {
         setConversations(convs || []);
       })
+      .catch(() => setConversations([]))
       .finally(() => setLoadingConvs(false));
   }, []);
 
@@ -70,38 +72,51 @@ export default function Assistant() {
   }, [messages]);
 
   const loadConversation = async (conv) => {
-    const full = await base44.agents.getConversation(conv.id);
-    setActiveConv(full);
-    setMessages(full.messages || []);
+    try {
+      const full = await base44.agents.getConversation(conv.id);
+      setActiveConv(full);
+      setMessages(full.messages || []);
+    } catch (err) {
+      toast({ title: "Failed to load session", description: err.message, variant: "destructive" });
+    }
   };
 
   const createNew = async () => {
-    const conv = await base44.agents.createConversation({
-      agent_name: "trading_assistant",
-      metadata: { name: `Session ${new Date().toLocaleTimeString()}` }
-    });
-    setConversations(prev => [conv, ...prev]);
-    setActiveConv(conv);
-    setMessages([]);
-  };
-
-  const handleSend = async () => {
-    if (!input.trim() || sending) return;
-    let conv = activeConv;
-    if (!conv) {
-      conv = await base44.agents.createConversation({
+    try {
+      const conv = await base44.agents.createConversation({
         agent_name: "trading_assistant",
         metadata: { name: `Session ${new Date().toLocaleTimeString()}` }
       });
       setConversations(prev => [conv, ...prev]);
       setActiveConv(conv);
+      setMessages([]);
+    } catch (err) {
+      toast({ title: "Failed to create session", description: err.message, variant: "destructive" });
     }
-    const text = input.trim();
-    setInput("");
-    setSending(true);
-    setMessages(prev => [...prev, { role: "user", content: text }]);
-    await base44.agents.addMessage(conv, { role: "user", content: text });
-    setSending(false);
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || sending) return;
+    try {
+      let conv = activeConv;
+      if (!conv) {
+        conv = await base44.agents.createConversation({
+          agent_name: "trading_assistant",
+          metadata: { name: `Session ${new Date().toLocaleTimeString()}` }
+        });
+        setConversations(prev => [conv, ...prev]);
+        setActiveConv(conv);
+      }
+      const text = input.trim();
+      setInput("");
+      setSending(true);
+      setMessages(prev => [...prev, { role: "user", content: text }]);
+      await base44.agents.addMessage(conv, { role: "user", content: text });
+    } catch (err) {
+      toast({ title: "Failed to send message", description: err.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleKeyDown = (e) => {

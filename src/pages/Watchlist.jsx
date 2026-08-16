@@ -39,6 +39,7 @@ export default function Watchlist() {
     setLoading(true);
     base44.entities.WatchlistItem.list("-created_date", 100)
       .then(setItems)
+      .catch(() => setItems([]))
       .finally(() => setLoading(false));
   };
 

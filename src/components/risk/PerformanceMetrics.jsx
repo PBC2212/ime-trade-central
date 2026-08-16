@@ -29,7 +29,7 @@ export default function PerformanceMetrics() {
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   if (error) return <div className="text-center py-16 text-destructive text-sm">Failed to load metrics: {error}</div>;
-  if (data?.metrics === null || !data?.win_rate) return <div className="text-center py-16 text-xs text-muted-foreground">No closed trades yet — close some trades in the Journal to see performance metrics.</div>;
+  if (data?.metrics === null) return <div className="text-center py-16 text-xs text-muted-foreground">No closed trades yet — close some trades in the Journal to see performance metrics.</div>;
 
   const m = data;
   const equityData = (m.equity_curve || []).map((e, i) => ({ idx: i + 1, pnl: e.pnl }));

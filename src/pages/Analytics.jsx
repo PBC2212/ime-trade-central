@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import PageHeader from "@/components/PageHeader";
 import { cn } from "@/lib/utils";
-import { BarChart2, TrendingUp, TrendingDown, Target } from "lucide-react";
+import { BarChart2, TrendingUp, TrendingDown, Target, Loader2 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend, AreaChart, Area
@@ -27,10 +27,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function Analytics() {
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     base44.entities.TradeJournal.list("-entry_date", 200)
       .then(setTrades)
+      .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
@@ -73,6 +75,22 @@ export default function Analytics() {
 
   const tickStyle = { fontSize: 10, fill: "hsl(215,20%,55%)" };
   const gridStyle = { stroke: "hsl(222,30%,16%)" };
+
+  if (loading) return (
+    <div className="flex flex-col h-full">
+      <PageHeader title="Analytics" subtitle="Performance metrics and portfolio insights" />
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex flex-col h-full">
+      <PageHeader title="Analytics" subtitle="Performance metrics and portfolio insights" />
+      <div className="flex-1 flex items-center justify-center text-sm text-destructive">Failed to load analytics: {error}</div>
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full">

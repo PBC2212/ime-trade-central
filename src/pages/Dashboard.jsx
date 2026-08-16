@@ -48,6 +48,9 @@ export default function Dashboard() {
     ]).then(([ops, tj]) => {
       setOpportunities(ops);
       setTrades(tj);
+    }).catch(() => {
+      setOpportunities([]);
+      setTrades([]);
     }).finally(() => setLoadingData(false));
   }, []);
 

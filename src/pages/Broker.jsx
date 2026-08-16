@@ -94,7 +94,8 @@ export default function Broker() {
   const handleCancelOrder = async (orderId) => {
     setCancellingId(orderId);
     try {
-      await invoke("cancel_order", { order_id: orderId });
+      const res = await invoke("cancel_order", { order_id: orderId });
+      if (res?.error) throw new Error(res.error);
       toast({ title: "Order cancelled" });
       load();
     } catch (err) {
@@ -108,7 +109,8 @@ export default function Broker() {
     if (!window.confirm(`Close entire ${symbol} position?`)) return;
     setClosingSymbol(symbol);
     try {
-      await invoke("close_position", { symbol });
+      const res = await invoke("close_position", { symbol });
+      if (res?.error) throw new Error(res.error);
       toast({ title: `${symbol} position closed` });
       load();
     } catch (err) {
