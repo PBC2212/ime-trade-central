@@ -137,7 +137,7 @@ export default function Dashboard() {
 
       <div className="p-6 space-y-6 flex-1">
         {/* Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           <StatCard
             label="Total P&L"
             value={`${totalPnl >= 0 ? "+$" : "-$"}${Math.abs(totalPnl).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
