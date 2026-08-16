@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import RiskKpiCard from "./RiskKpiCard";
 import { Loader2, AlertTriangle, Flame, TrendingDown, ShieldAlert, Activity } from "lucide-react";
@@ -55,7 +56,7 @@ export default function PortfolioRiskPanel() {
     <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
       <AlertTriangle className="w-8 h-8 text-amber-500/50" />
       <p className="text-sm text-muted-foreground max-w-xs">Connect your Alpaca account in the Broker page to view portfolio risk.</p>
-      <a href="/broker"><button className="text-xs text-primary hover:underline">Go to Broker →</button></a>
+      <Link to="/broker" className="text-xs text-primary hover:underline">Go to Broker →</Link>
     </div>
   );
   if (error) return <div className="text-center py-16 text-destructive text-sm">Failed to load risk data: {error}</div>;
