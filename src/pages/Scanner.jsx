@@ -82,9 +82,13 @@ export default function Scanner() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this signal? This cannot be undone.")) return;
-    await base44.entities.Opportunity.delete(id);
-    if (selected?.id === id) setSelected(null);
-    load();
+    try {
+      await base44.entities.Opportunity.delete(id);
+      if (selected?.id === id) setSelected(null);
+      load();
+    } catch (err) {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    }
   };
 
   const handleSave = async () => {
@@ -99,16 +103,20 @@ export default function Scanner() {
       risk_score: parseFloat(form.risk_score) || undefined,
       reward_score: parseFloat(form.reward_score) || undefined,
     };
-    if (editTarget) {
-      const updated = await base44.entities.Opportunity.update(editTarget.id, payload);
-      // Keep detail panel in sync
-      if (selected?.id === editTarget.id) setSelected({ ...selected, ...payload });
-    } else {
-      await base44.entities.Opportunity.create(payload);
+    try {
+      if (editTarget) {
+        await base44.entities.Opportunity.update(editTarget.id, payload);
+        if (selected?.id === editTarget.id) setSelected({ ...selected, ...payload });
+      } else {
+        await base44.entities.Opportunity.create(payload);
+      }
+      setShowForm(false);
+      load();
+    } catch (err) {
+      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setShowForm(false);
-    load();
   };
 
   const generateAIAnalysis = async () => {

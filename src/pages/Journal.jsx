@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Plus, Trash2, Edit2, BookOpen, TrendingUp, TrendingDown, Zap, Loader2, Star } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 const EMPTY = {
   symbol: "", direction: "long", entry_price: "", exit_price: "", quantity: "",
@@ -59,27 +60,37 @@ export default function Journal() {
       pnl_percent: parseFloat(form.pnl_percent) || undefined,
       rating: parseFloat(form.rating) || undefined,
     };
-    if (editTarget) {
-      await base44.entities.TradeJournal.update(editTarget.id, payload);
-    } else {
-      await base44.entities.TradeJournal.create(payload);
+    try {
+      if (editTarget) {
+        await base44.entities.TradeJournal.update(editTarget.id, payload);
+      } else {
+        await base44.entities.TradeJournal.create(payload);
+      }
+      setShowForm(false);
+      load();
+    } catch (err) {
+      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setShowForm(false);
-    load();
   };
 
   const handleDelete = async (id) => {
-    await base44.entities.TradeJournal.delete(id);
-    if (selected?.id === id) setSelected(null);
-    load();
+    try {
+      await base44.entities.TradeJournal.delete(id);
+      if (selected?.id === id) setSelected(null);
+      load();
+    } catch (err) {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    }
   };
 
   const generateAIReview = async () => {
     if (!form.symbol) return;
     setGeneratingReview(true);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Provide an institutional-grade trade review for this completed trade:
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `Provide an institutional-grade trade review for this completed trade:
 Symbol: ${form.symbol}, Direction: ${form.direction}
 Entry: $${form.entry_price}, Exit: $${form.exit_price}, Qty: ${form.quantity}
 P&L: $${form.pnl} (${form.pnl_percent}%)
@@ -87,9 +98,13 @@ Strategy: ${form.strategy}, Setup: ${form.setup_type}
 Notes: ${form.notes}
 
 Provide a 2-3 paragraph professional review covering: execution quality, setup validity, risk management, what worked or didn't, and actionable improvements.`,
-    });
-    setForm(f => ({ ...f, ai_review: res }));
-    setGeneratingReview(false);
+      });
+      setForm(f => ({ ...f, ai_review: res }));
+    } catch (err) {
+      toast({ title: "AI review failed", description: err.message, variant: "destructive" });
+    } finally {
+      setGeneratingReview(false);
+    }
   };
 
   const stats = {

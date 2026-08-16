@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { cn } from "@/lib/utils";
 import { Plus, Trash2, Edit2, Eye, Search, Star, TrendingUp, TrendingDown, Loader2, Bell } from "lucide-react";
 import TradingViewChart from "@/components/TradingViewChart";
+import { toast } from "@/components/ui/use-toast";
 
 const EMPTY = {
   symbol: "", watchlist_name: "Default", notes: "", alert_price: "", current_price: "", entry_price: "", direction: "neutral", sector: "", tags: []
@@ -71,20 +72,29 @@ export default function Watchlist() {
       current_price: parseFloat(form.current_price) || undefined,
       entry_price: parseFloat(form.entry_price) || undefined,
     };
-    if (editTarget) {
-      await base44.entities.WatchlistItem.update(editTarget.id, payload);
-    } else {
-      await base44.entities.WatchlistItem.create(payload);
+    try {
+      if (editTarget) {
+        await base44.entities.WatchlistItem.update(editTarget.id, payload);
+      } else {
+        await base44.entities.WatchlistItem.create(payload);
+      }
+      setShowForm(false);
+      load();
+    } catch (err) {
+      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setShowForm(false);
-    load();
   };
 
   const handleDelete = async (id) => {
-    await base44.entities.WatchlistItem.delete(id);
-    if (selected?.id === id) setSelected(null);
-    load();
+    try {
+      await base44.entities.WatchlistItem.delete(id);
+      if (selected?.id === id) setSelected(null);
+      load();
+    } catch (err) {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    }
   };
 
   return (

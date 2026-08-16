@@ -64,6 +64,7 @@ export default function Dashboard() {
     setLoadingInsights(true);
     return base44.functions.invoke("dashboardInsights", {})
       .then(res => setInsights(res.data?.insights || []))
+      .catch(() => setInsights([]))
       .finally(() => setLoadingInsights(false));
   }, []);
 
@@ -89,13 +90,13 @@ export default function Dashboard() {
     ? Math.round((closedTrades.filter(t => (t.pnl || 0) > 0).length / closedTrades.length) * 100)
     : 0;
 
-  // Build cumulative P&L curve from real closed trades sorted by entry date
+  // Build cumulative P&L curve from real closed trades sorted by exit date
   let running = 0;
   const equityData = [...closedTrades]
-    .sort((a, b) => (a.entry_date || "").localeCompare(b.entry_date || ""))
+    .sort((a, b) => (a.exit_date || a.entry_date || "").localeCompare(b.exit_date || b.entry_date || ""))
     .map(t => {
       running += t.pnl || 0;
-      return { date: t.symbol, value: running };
+      return { date: t.exit_date || t.entry_date || "", value: running };
     });
 
   return (
@@ -181,7 +182,8 @@ export default function Dashboard() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,16%)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} axisLine={false} tickLine={false}
+                    minTickGap={30} tickFormatter={d => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""} />
                   <YAxis tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} axisLine={false} tickLine={false} tickFormatter={v => `$${v.toFixed(0)}`} />
                   <Tooltip
                     contentStyle={{ background: "hsl(222,47%,10%)", border: "1px solid hsl(222,30%,16%)", borderRadius: 6, fontSize: 11 }}
