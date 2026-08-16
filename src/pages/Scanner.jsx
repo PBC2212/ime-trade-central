@@ -93,6 +93,10 @@ export default function Scanner() {
   };
 
   const handleSave = async () => {
+    if (!form.symbol?.trim()) {
+      toast({ title: "Symbol required", description: "Enter a ticker symbol to save.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     const payload = {
       ...form,
