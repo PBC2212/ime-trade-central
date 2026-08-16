@@ -29,7 +29,8 @@ export default function PortfolioRiskPanel() {
           action: "portfolio_risk",
           positions, account_equity: equity, trades,
         });
-        setData({ ...risk, equity });
+        if (risk.error) throw new Error(risk.error);
+        setData({ ...risk, equity, positions: risk.positions || [] });
       } catch (err) {
         setError(err.message);
       } finally {
@@ -72,7 +73,7 @@ export default function PortfolioRiskPanel() {
         <div className="px-3 py-2 bg-secondary border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Position Exposure
         </div>
-        {data.positions?.length === 0 ? (
+        {(!data.positions || data.positions.length === 0) ? (
           <div className="px-3 py-8 text-center text-xs text-muted-foreground">No open positions</div>
         ) : (
           <div className="overflow-x-auto">
