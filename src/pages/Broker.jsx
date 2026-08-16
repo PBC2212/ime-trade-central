@@ -14,6 +14,7 @@ import {
   Loader2, Plus, X, AlertTriangle, Wallet, BarChart2, Clock
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import BrokerConnection from "@/components/BrokerConnection";
 
 const fmt = (n, dec = 2) => Number(n).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec });
 const fmtMoney = (n) => `$${fmt(n)}`;
@@ -36,20 +37,36 @@ export default function Broker() {
   const invoke = (action, params = {}) =>
     base44.functions.invoke("alpaca", { action, ...params }).then(r => r.data);
 
+  const [connected, setConnected] = useState(false);
+  const [notConnected, setNotConnected] = useState(false);
+
   const load = useCallback(async () => {
+    if (!connected) return;
     setLoading(true);
+    setNotConnected(false);
     const [acct, pos, ord] = await Promise.all([
-      invoke("account"),
-      invoke("positions"),
-      invoke("orders", { status: orderTab, limit: 20 }),
+      invoke("account").catch(e => {
+        if (e?.error === "NOT_CONNECTED") { setNotConnected(true); return null; }
+        throw e;
+      }),
+      invoke("positions").catch(() => ({ positions: [] })),
+      invoke("orders", { status: orderTab, limit: 20 }).catch(() => ({ orders: [] })),
     ]);
-    setAccount(acct.account);
+    if (acct?.account) setAccount(acct.account);
+    else if (acct === null) { setLoading(false); return; }
     setPositions(pos.positions || []);
     setOrders(ord.orders || []);
     setLoading(false);
-  }, [orderTab]);
+  }, [orderTab, connected]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (connected) load(); }, [load]);
+
+  // Detect existing connection on mount
+  useEffect(() => {
+    base44.auth.me().then(me => {
+      if (me?.data?.alpaca_api_key && me?.data?.alpaca_secret_key) setConnected(true);
+    }).catch(() => {});
+  }, []);
 
   const loadOrders = async (status) => {
     const ord = await invoke("orders", { status, limit: 20 });
@@ -97,19 +114,30 @@ export default function Broker() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Live Trading Desk" subtitle={`Alpaca ${account?.account_type === "live" ? "Live" : "Paper"} Account`}>
-        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={load} disabled={loading}>
+        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={load} disabled={loading || !connected}>
           <RefreshCw className={cn("w-3 h-3", loading && "animate-spin")} /> Refresh
         </Button>
-        <Button size="sm" className="text-xs gap-1.5" onClick={() => setShowOrderForm(true)}>
+        <Button size="sm" className="text-xs gap-1.5" onClick={() => setShowOrderForm(true)} disabled={!connected}>
           <Plus className="w-3 h-3" /> Place Order
         </Button>
       </PageHeader>
 
-      {loading && !account ? (
+      {/* Broker Connection */}
+      <div className="px-6 pt-4">
+        <BrokerConnection onConnected={() => { setConnected(true); load(); }} />
+      </div>
+
+      {!connected ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8">
+          <p className="text-sm text-muted-foreground">Connect your Alpaca account above to view positions and place orders.</p>
+        </div>
+      ) : loading && !account ? (
         <div className="flex-1 flex items-center justify-center gap-2 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
-          <span className="text-sm">Connecting to Alpaca...</span>
+          <span className="text-sm">Loading your account...</span>
         </div>
+      ) : notConnected ? (
+        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">Unable to reach your Alpaca account. Check your credentials.</div>
       ) : (
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
 

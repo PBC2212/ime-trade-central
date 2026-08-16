@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,15 @@ export default function PositionSizer() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Prefill account equity from user profile
+  useEffect(() => {
+    base44.auth.me().then(me => {
+      if (me?.data?.portfolio_equity) {
+        setForm(p => ({ ...p, account_equity: String(me.data.portfolio_equity) }));
+      }
+    }).catch(() => {});
+  }, []);
 
   const calculate = async () => {
     setLoading(true); setError(null);

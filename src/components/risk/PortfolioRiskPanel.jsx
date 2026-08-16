@@ -15,15 +15,21 @@ export default function PortfolioRiskPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [notConnected, setNotConnected] = useState(false);
+
   useEffect(() => {
     (async () => {
       try {
+        const me = await base44.auth.me();
+        const connected = !!(me?.data?.alpaca_api_key && me?.data?.alpaca_secret_key);
+        if (!connected) { setNotConnected(true); setLoading(false); return; }
+
         const [acctRes, posRes, trades] = await Promise.all([
           base44.functions.invoke("alpaca", { action: "account" }),
           base44.functions.invoke("alpaca", { action: "positions" }),
           base44.entities.TradeJournal.list("-created_date", 100),
         ]);
-        const equity = acctRes.account?.equity || 100000;
+        const equity = acctRes.account?.equity || me?.data?.portfolio_equity || 100000;
         const positions = posRes.positions || [];
         const risk = await base44.functions.invoke("riskEngine", {
           action: "portfolio_risk",
@@ -40,6 +46,13 @@ export default function PortfolioRiskPanel() {
   }, []);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  if (notConnected) return (
+    <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+      <AlertTriangle className="w-8 h-8 text-amber-500/50" />
+      <p className="text-sm text-muted-foreground max-w-xs">Connect your Alpaca account in the Broker page to view portfolio risk.</p>
+      <a href="/broker"><button className="text-xs text-primary hover:underline">Go to Broker →</button></a>
+    </div>
+  );
   if (error) return <div className="text-center py-16 text-destructive text-sm">Failed to load risk data: {error}</div>;
   if (!data) return null;
 

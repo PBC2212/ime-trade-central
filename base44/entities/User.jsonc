@@ -32,6 +32,19 @@
     "default_position_size": {
       "type": "number",
       "default": 2
+    },
+    "alpaca_api_key": {
+      "type": "string",
+      "description": "User's Alpaca API key ID for per-account trading"
+    },
+    "alpaca_secret_key": {
+      "type": "string",
+      "description": "User's Alpaca API secret key for per-account trading"
+    },
+    "alpaca_base_url": {
+      "type": "string",
+      "default": "https://paper-api.alpaca.markets",
+      "description": "Alpaca API base URL (paper or live)"
     }
   }
 }
