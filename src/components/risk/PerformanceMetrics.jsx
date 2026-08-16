@@ -16,6 +16,7 @@ export default function PerformanceMetrics() {
       try {
         const trades = await base44.entities.TradeJournal.list("-created_date", 200);
         const res = await base44.functions.invoke("riskEngine", { action: "performance_metrics", trades });
+        if (res.error) throw new Error(res.error);
         setData(res);
       } catch (err) {
         setError(err.message);

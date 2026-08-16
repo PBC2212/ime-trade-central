@@ -22,6 +22,7 @@ export default function PositionSizer() {
         risk_pct: parseFloat(form.risk_pct) || 1.0,
         account_equity: parseFloat(form.account_equity) || 100000,
       });
+      if (res.error) throw new Error(res.error);
       setResult(res);
     } catch (err) {
       setError(err.message);
