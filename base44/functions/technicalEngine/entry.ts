@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       const macdLine = [];
       for (let i = 12; i < arr.length; i++) {
         e12 = arr[i]*k12 + e12*(1-k12);
-        if (i >= 25) { e26 = arr[i]*k26 + e26*(1-k26); macdLine.push(e12-e26); }
+        if (i >= 26) { e26 = arr[i]*k26 + e26*(1-k26); macdLine.push(e12-e26); }
       }
       if (macdLine.length < 9) return null;
       let sig = macdLine.slice(0,9).reduce((s,v)=>s+v,0)/9;

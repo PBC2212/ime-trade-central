@@ -293,12 +293,18 @@ Return JSON: { "setups": [ ... ] }`,
           }
         }
       }
+    }).catch(err => {
+      setScanning(false);
+      setScanProgress(null);
+      toast({ title: "Scan failed", description: err.message || "AI analysis error", variant: "destructive" });
+      return null;
     });
+    if (!res) return;
 
     const sorted = (res.setups || []).sort((a, b) => (b.institutional_quality_score || 0) - (a.institutional_quality_score || 0));
-    for (const setup of sorted) {
-      await base44.entities.Opportunity.create({ ...setup, status: "active" });
-    }
+    await Promise.all(sorted.map(setup =>
+      base44.entities.Opportunity.create({ ...setup, status: "active" })
+    ));
     setScanning(false);
     setScanProgress(null);
     load();
