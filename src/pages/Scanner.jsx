@@ -49,6 +49,8 @@ export default function Scanner() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [generatingAI, setGeneratingAI] = useState(false);
+  const [scanProgress, setScanProgress] = useState(null);
+  const [customSymbols, setCustomSymbols] = useState("");
 
   const load = () => {
     setLoading(true);
@@ -125,79 +127,139 @@ Provide a 2-3 sentence professional analysis explaining the setup rationale, key
 
   const runScan = async () => {
     setScanning(true);
-    const symbols = ["AAPL", "NVDA", "MSFT", "TSLA", "META", "AMZN", "SPY", "QQQ", "AMD", "GOOGL", "GS", "JPM", "XOM", "UNH", "V"];
+
+    // Custom symbols or default universe
+    const symbols = customSymbols.trim()
+      ? customSymbols.toUpperCase().split(/[,\s]+/).filter(Boolean).slice(0, 20)
+      : ["AAPL", "NVDA", "MSFT", "TSLA", "META", "AMZN", "AMD", "GOOGL", "GS", "JPM", "XOM", "UNH", "V"];
+
+    // ═══ PASS 1 — QUANTITATIVE PRE-FILTER (no LLM) ═══
+    setScanProgress({ phase: "Fetching historical bars from Alpaca…", passed: 0, total: symbols.length });
+
+    const barsResults = await Promise.all(
+      symbols.map(sym =>
+        base44.functions.invoke("alpaca", { action: "bars", symbol: sym, limit: 300 })
+          .then(r => ({ symbol: sym, bars: r.bars || [] }))
+          .catch(() => ({ symbol: sym, bars: [] }))
+      )
+    );
+
+    setScanProgress({ phase: "Computing technical indicators…", passed: 0, total: symbols.length });
+
+    const indicatorResults = await Promise.all(
+      barsResults
+        .filter(r => r.bars.length >= 30)
+        .map(r =>
+          base44.functions.invoke("technicalEngine", { bars: r.bars, symbol: r.symbol })
+            .then(indicators => ({ symbol: r.symbol, indicators }))
+            .catch(() => ({ symbol: r.symbol, indicators: null }))
+        )
+    );
+
+    // Apply hard quantitative filters
+    const passing = indicatorResults.filter(r => {
+      if (!r.indicators) return false;
+      const i = r.indicators;
+      if (i.avg_volume_20d < 50000) return false;   // liquidity gate (IEX feed — ~5% of total market volume)
+      if (i.rsi > 80 || i.rsi < 20) return false;      // overbought / oversold
+      return true;
+    });
+
+    setScanProgress({ phase: `AI analyzing ${passing.length} qualified candidates…`, passed: passing.length, total: symbols.length });
+
+    if (passing.length === 0) {
+      setScanning(false);
+      setScanProgress(null);
+      toast({ title: "No symbols passed quantitative filter", description: "All candidates failed liquidity/RSI gates.", variant: "destructive" });
+      return;
+    }
+
+    // Build candidate data with REAL computed indicators
+    const candidatesData = passing.map(c => {
+      const i = c.indicators;
+      return {
+        symbol: c.symbol, price: i.price,
+        rsi: i.rsi, sma20: i.sma20, sma50: i.sma50, sma200: i.sma200,
+        above_sma20: i.above_sma20, above_sma50: i.above_sma50, above_sma200: i.above_sma200,
+        golden_cross: i.golden_cross, death_cross: i.death_cross,
+        macd_line: i.macd_line, macd_signal: i.macd_signal, macd_histogram: i.macd_histogram,
+        stoch_k: i.stoch_k, stoch_d: i.stoch_d,
+        roc_5d: i.roc_5d, roc_20d: i.roc_20d,
+        atr14: i.atr14, atr_pct: i.atr_pct,
+        bb_upper: i.bb_upper, bb_middle: i.bb_middle, bb_lower: i.bb_lower,
+        bb_bandwidth: i.bb_bandwidth, bb_position: i.bb_position,
+        volatility_compression: i.volatility_compression, historical_volatility: i.historical_volatility,
+        avg_volume_20d: i.avg_volume_20d, relative_volume: i.relative_volume, volume_trend: i.volume_trend,
+        obv: i.obv,
+        trend_direction: i.trend_direction, uptrend: i.uptrend, downtrend: i.downtrend,
+        near_52w_high: i.near_52w_high, near_52w_low: i.near_52w_low,
+        pct_from_52w_high: i.pct_from_52w_high, pct_from_52w_low: i.pct_from_52w_low,
+        high_52w: i.high_52w, low_52w: i.low_52w,
+        nearest_resistance: i.nearest_resistance, nearest_support: i.nearest_support,
+        breakout_signal: i.breakout_signal,
+        bullish_confluence: i.bullish_confluence, bearish_confluence: i.bearish_confluence,
+        dominant_bias: i.dominant_bias,
+      };
+    });
+
+    // ═══ PASS 2 — AI INSTITUTIONAL ANALYSIS ═══
     const res = await base44.integrations.Core.InvokeLLM({
       add_context_from_internet: true,
-      prompt: `You are a senior portfolio manager at a top-tier hedge fund. Today is ${new Date().toDateString()}. Your mandate: MAXIMUM WIN RATE through extreme selectivity and multi-confirmation filtering.
+      model: "gemini_3_flash",
+      prompt: `You are the head of quantitative research at a multi-billion dollar hedge fund. Today is ${new Date().toDateString()}.
+You are reviewing pre-filtered trade candidates that have ALREADY passed liquidity and RSI quality screens.
 
-Universe: ${symbols.join(", ")}
+Below are the candidates with their REAL computed technical indicator values (computed from actual historical price data via a mathematical engine — do NOT estimate or guess these values, use them exactly as provided):
 
-═══ MANDATORY PRE-FILTERS (ALL must pass or REJECT the setup) ═══
+${JSON.stringify(candidatesData, null, 2)}
 
-✅ MARKET REGIME CHECK
-- Is SPY above its 200-day MA? If NO → only accept short setups or reject longs entirely.
-- Is the VIX elevated (>25)? If YES → tighten stops, reduce position size, prefer mean-reversion over momentum.
-- What is the prevailing macro trend (bull/bear/sideways)? Only trade WITH it.
+═══ YOUR ANALYSIS FRAMEWORK ═══
 
-✅ MULTI-TIMEFRAME ALIGNMENT (required for entry)
-- Weekly trend must AGREE with daily trend direction.
-- Daily setup must AGREE with 4H momentum direction.
-- Minimum 2 of 3 timeframes (weekly/daily/4H) must confirm the trade direction.
-- DO NOT enter counter-trend trades unless mean-reversion score is exceptional (>85).
+TECHNICAL CONFLUENCE
+- Use the bullish_confluence / bearish_confluence counts provided (out of 9 indicators each)
+- Strong setup = 6+ indicators confirming the same bias
+- Weak setup = fewer than 4 indicators aligned
 
-✅ SECTOR CONFIRMATION
-- The stock's sector ETF must be in an uptrend for longs (downtrend for shorts).
-- Stock must outperform its sector ETF on 5-day AND 20-day basis for longs.
-- Avoid longs in the 2 weakest-performing sectors of the past 20 days.
+ENTRY PRECISION
+- Identify optimal entry from: nearest_support (longs) / nearest_resistance (shorts), VWAP, or breakout retest
+- Entry should be within 1% of a technical level — avoid chasing extended moves
 
-✅ ENTRY QUALITY GATE
-- Only enter longs on pullbacks to support OR confirmed breakouts with volume > 1.5x average.
-- Avoid chasing extended moves (price >5% above nearest support = skip).
-- Prefer setups in volatility compression zones (tight Bollinger Bands, low ATR% vs 20-day avg).
-- Skip ALL setups on major macro event days (FOMC, CPI, NFP).
+STOP PLACEMENT (use the provided ATR14)
+- Aggressive: entry ∓ 1.0×ATR14  |  Standard: 1.5×ATR14  |  Conservative: 2.0×ATR14
+- Longs: stop below nearest_support  |  Shorts: stop above nearest_resistance
 
-✅ INSTITUTIONAL QUALITY GATE (score ≥75 required)
-- Sufficient liquidity (ADV > 5M shares)
-- Risk/reward ≥ 2:1 minimum
-- Clear directional bias with defined technical catalyst
-- Relative strength rank top-25% vs SPY over 20 days
-- Volume confirmation on last 2-3 sessions
-- Options flow confirming direction (net call buying for longs, net put buying for shorts)
+TARGETS
+- Target 1: nearest_resistance (longs) / nearest_support (shorts), or 1.5× risk distance
+- Target 2: next major level or 2.5× risk distance
+- Require minimum 1:2 risk/reward
 
-═══ SCORING FRAMEWORK ═══
-1. LIQUIDITY (0-100): ADV, relative volume, bid/ask quality
-2. RELATIVE STRENGTH (0-100): vs SPY + sector, 5/20/60/252-day basis
-3. MARKET STRUCTURE (0-100): trend quality, S/R levels, breakout validity
-4. OPTIONS FLOW (0-100): unusual activity, OI changes, IV signals
-5. VOLUME QUALITY (0-100): accumulation/distribution, dark pool, conviction
-6. CATALYST STRENGTH (0-100): magnitude and timing of primary catalyst
-7. RISK PROFILE (0-100): lower = safer — volatility, gap risk, event risk
-8. ENTRY TIMING (0-100): pullback quality, compression, confirmation
+POSITION SIZING
+- Express as: "Risk $X on Y shares" assuming $100,000 account
+- Conservative 0.5% | Standard 1.0% | Aggressive 1.5% (high conviction only)
 
-═══ OUTPUT FORMAT ═══
-Return only the TOP 3 highest-conviction setups that pass ALL pre-filters. If fewer than 3 pass, return only those that qualify. Quality over quantity.
+INSTITUTIONAL QUALITY SCORE (0-100)
+- Liquidity (20): avg_volume_20d, relative_volume
+- Technical (25): confluence count, trend_direction, golden/death cross, breakout_signal
+- Risk/Reward (20): R/R ratio, ATR-based stop quality
+- Catalyst (15): use web context for earnings / news / sector momentum
+- Options flow (20): infer from web context if available
 
-For each setup return:
-- symbol, direction (long/short), sector
-- strategy_type (momentum/breakout/mean_reversion/trend_continuation/volume_anomaly)
-- time_horizon (intraday/swing/position)
-- confidence_score (0-100)
-- institutional_quality_score (0-100) — must be ≥75
-- risk_score (0-100) — risk level, lower is safer
-- reward_score (0-100)
-- liquidity_score (0-100)
-- relative_strength_score (0-100)
-- entry_price (realistic pullback/breakout price, NOT current extended price)
-- stop_loss (ATR-based technical level, tight but logical)
-- target_price (Target 1 — first key resistance/support, conservative)
-- target_price_2 (Target 2 — extended move target)
-- risk_reward_ratio (to Target 1, minimum 2.0)
-- position_sizing ("X% portfolio risk, Y shares at $Z — scale in Z% at entry, Z% on confirmation")
-- primary_catalyst (most important near-term catalyst with expected timing)
-- institutional_thesis (4-5 sentences: macro context, technicals, fundamentals, options signal, risk factors)
-- ai_explanation (2-3 sentences: concise setup summary for quick review)
+Only output opportunities scoring 70+. Rank highest to lowest. Maximum 5 per scan.
 
-Return JSON with array "setups". Rank by institutional_quality_score descending. REJECT any setup below 75.`,
+For each opportunity output exactly:
+{
+  "symbol": "", "sector": "", "direction": "long or short",
+  "strategy_type": "momentum|breakout|mean_reversion|trend_continuation|volume_anomaly",
+  "time_horizon": "intraday|swing|position",
+  "confidence_score": 0, "institutional_quality_score": 0,
+  "risk_score": 0, "reward_score": 0, "liquidity_score": 0, "relative_strength_score": 0,
+  "entry_price": 0, "stop_loss": 0, "target_price": 0, "target_price_2": 0,
+  "risk_reward_ratio": 0, "position_sizing": "", "primary_catalyst": "",
+  "institutional_thesis": "4-5 sentences referencing the real indicator values provided",
+  "ai_explanation": "2-3 sentence summary"
+}
+
+Return JSON: { "setups": [ ... ] }`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -232,19 +294,27 @@ Return JSON with array "setups". Rank by institutional_quality_score descending.
         }
       }
     });
-    // Sort by institutional quality score descending
+
     const sorted = (res.setups || []).sort((a, b) => (b.institutional_quality_score || 0) - (a.institutional_quality_score || 0));
     for (const setup of sorted) {
       await base44.entities.Opportunity.create({ ...setup, status: "active" });
     }
     setScanning(false);
+    setScanProgress(null);
     load();
-    toast({ title: `${sorted.length} institutional signals generated`, description: "AI scan complete — ranked by institutional quality." });
+    toast({ title: `${sorted.length} institutional signals generated`, description: `${passing.length}/${symbols.length} symbols passed quant filter → AI analysis.` });
   };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <PageHeader title="Opportunity Scanner" subtitle="AI-powered trade signal detection">
+      <PageHeader title="Opportunity Scanner" subtitle="AI-powered trade signal detection · real data + quant pre-filter">
+        <Input
+          placeholder="Custom symbols (e.g. AAPL, NVDA, TSLA)"
+          value={customSymbols}
+          onChange={e => setCustomSymbols(e.target.value)}
+          className="h-8 text-xs w-48 bg-secondary border-border"
+          disabled={scanning}
+        />
         <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={openCreate}>
           <Plus className="w-3 h-3" /> Add Signal
         </Button>
@@ -253,6 +323,17 @@ Return JSON with array "setups". Rank by institutional_quality_score descending.
           {scanning ? "Scanning..." : "AI Scan"}
         </Button>
       </PageHeader>
+      {scanProgress && (
+        <div className="px-4 py-2 bg-primary/5 border-b border-primary/20 flex items-center gap-3 text-xs">
+          <Loader2 className="w-3 h-3 animate-spin text-primary flex-shrink-0" />
+          <span className="text-foreground font-medium">{scanProgress.phase}</span>
+          {scanProgress.total > 0 && (
+            <span className="text-muted-foreground font-mono ml-auto">
+              {scanProgress.passed}/{scanProgress.total} passed quant filter
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden min-h-0">
         {/* List Panel */}

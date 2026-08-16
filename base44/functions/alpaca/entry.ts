@@ -73,6 +73,28 @@ Deno.serve(async (req) => {
       return Response.json({ order: data });
     }
 
+    // Historical OHLCV bars via Alpaca market data API (free, reuses trading keys)
+    if (action === "bars") {
+      const { symbol, limit = 300 } = params;
+      if (!symbol) return Response.json({ error: "symbol required" }, { status: 400 });
+      const end = new Date();
+      end.setHours(end.getHours() - 4); // avoid "recent SIP data" restriction on free tier
+      const start = new Date();
+      start.setDate(start.getDate() - 400);
+      const fmt = (d) => d.toISOString();
+      const dataUrl = `https://data.alpaca.markets/v2/stocks/${symbol.toUpperCase()}/bars?timeframe=1Day&limit=${limit}&start=${fmt(start)}&end=${fmt(end)}&feed=iex`;
+      const dataRes = await fetch(dataUrl, { headers });
+      if (!dataRes.ok) {
+        const err = await dataRes.text();
+        throw new Error(`Alpaca market data error ${dataRes.status}: ${err}`);
+      }
+      const data = await dataRes.json();
+      const bars = (data.bars || []).map(b => ({
+        t: b.t, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v, vw: b.vw,
+      }));
+      return Response.json({ symbol: symbol.toUpperCase(), bars, raw_count: (data.bars || []).length });
+    }
+
     return Response.json({ error: "Unknown action" }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
