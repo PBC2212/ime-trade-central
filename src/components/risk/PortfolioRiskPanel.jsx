@@ -29,13 +29,18 @@ export default function PortfolioRiskPanel() {
           base44.functions.invoke("alpaca", { action: "positions" }),
           base44.entities.TradeJournal.list("-created_date", 100),
         ]);
-        const equity = acctRes.account?.equity || me?.data?.portfolio_equity || 100000;
-        const positions = posRes.positions || [];
-        const risk = await base44.functions.invoke("riskEngine", {
+        const acctBody = acctRes.data;
+        const posBody = posRes.data;
+        if (acctBody?.error === "NOT_CONNECTED") { setNotConnected(true); setLoading(false); return; }
+        if (acctBody?.error) throw new Error(acctBody.error);
+        const equity = acctBody.account?.equity || me?.data?.portfolio_equity || 100000;
+        const positions = posBody?.positions || [];
+        const riskRes = await base44.functions.invoke("riskEngine", {
           action: "portfolio_risk",
           positions, account_equity: equity, trades,
         });
-        if (risk.error) throw new Error(risk.error);
+        const risk = riskRes.data;
+        if (risk?.error) throw new Error(risk.error);
         setData({ ...risk, equity, positions: risk.positions || [] });
       } catch (err) {
         setError(err.message);

@@ -142,7 +142,7 @@ Provide a 2-3 sentence professional analysis explaining the setup rationale, key
     const barsResults = await Promise.all(
       symbols.map(sym =>
         base44.functions.invoke("alpaca", { action: "bars", symbol: sym, limit: 300 })
-          .then(r => ({ symbol: sym, bars: r.bars || [] }))
+          .then(r => ({ symbol: sym, bars: r.data?.bars || [] }))
           .catch(() => ({ symbol: sym, bars: [] }))
       )
     );
@@ -154,7 +154,7 @@ Provide a 2-3 sentence professional analysis explaining the setup rationale, key
         .filter(r => r.bars.length >= 30)
         .map(r =>
           base44.functions.invoke("technicalEngine", { bars: r.bars, symbol: r.symbol })
-            .then(indicators => ({ symbol: r.symbol, indicators }))
+            .then(r2 => ({ symbol: r.symbol, indicators: r2.data }))
             .catch(() => ({ symbol: r.symbol, indicators: null }))
         )
     );

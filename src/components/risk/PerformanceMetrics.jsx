@@ -16,8 +16,9 @@ export default function PerformanceMetrics() {
       try {
         const trades = await base44.entities.TradeJournal.list("-created_date", 200);
         const res = await base44.functions.invoke("riskEngine", { action: "performance_metrics", trades });
-        if (res.error) throw new Error(res.error);
-        setData(res);
+        const body = res.data;
+        if (body?.error) throw new Error(body.error);
+        setData(body);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -28,9 +29,9 @@ export default function PerformanceMetrics() {
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   if (error) return <div className="text-center py-16 text-destructive text-sm">Failed to load metrics: {error}</div>;
-  if (!data?.metrics) return <div className="text-center py-16 text-xs text-muted-foreground">No closed trades yet — close some trades in the Journal to see performance metrics.</div>;
+  if (data?.metrics === null || !data?.win_rate) return <div className="text-center py-16 text-xs text-muted-foreground">No closed trades yet — close some trades in the Journal to see performance metrics.</div>;
 
-  const m = data.metrics;
+  const m = data;
   const equityData = (m.equity_curve || []).map((e, i) => ({ idx: i + 1, pnl: e.pnl }));
   const monthlyData = Object.entries(m.monthly_returns || {}).map(([k, v]) => ({ month: k, pnl: +v.toFixed(2) }));
 

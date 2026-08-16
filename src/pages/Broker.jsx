@@ -45,15 +45,13 @@ export default function Broker() {
     setLoading(true);
     setNotConnected(false);
     const [acct, pos, ord] = await Promise.all([
-      invoke("account").catch(e => {
-        if (e?.error === "NOT_CONNECTED") { setNotConnected(true); return null; }
-        throw e;
-      }),
+      invoke("account").catch(() => null),
       invoke("positions").catch(() => ({ positions: [] })),
       invoke("orders", { status: orderTab, limit: 20 }).catch(() => ({ orders: [] })),
     ]);
+    if (acct?.error === "NOT_CONNECTED") { setNotConnected(true); setLoading(false); return; }
     if (acct?.account) setAccount(acct.account);
-    else if (acct === null) { setLoading(false); return; }
+    else if (!acct) { setNotConnected(true); setLoading(false); return; }
     setPositions(pos.positions || []);
     setOrders(ord.orders || []);
     setLoading(false);
@@ -76,33 +74,48 @@ export default function Broker() {
   const handlePlaceOrder = async () => {
     if (!orderForm.symbol || !orderForm.qty) return;
     setPlacingOrder(true);
-    const res = await invoke("place_order", orderForm);
-    setPlacingOrder(false);
-    if (res.order) {
-      toast({ title: "Order placed", description: `${orderForm.side.toUpperCase()} ${orderForm.qty} ${orderForm.symbol}` });
-      setShowOrderForm(false);
-      setOrderForm({ symbol: "", qty: "", side: "buy", type: "market", time_in_force: "day", limit_price: "", stop_price: "" });
-      load();
-    } else {
-      toast({ title: "Order failed", description: res.error, variant: "destructive" });
+    try {
+      const res = await invoke("place_order", orderForm);
+      if (res.order) {
+        toast({ title: "Order placed", description: `${orderForm.side.toUpperCase()} ${orderForm.qty} ${orderForm.symbol}` });
+        setShowOrderForm(false);
+        setOrderForm({ symbol: "", qty: "", side: "buy", type: "market", time_in_force: "day", limit_price: "", stop_price: "" });
+        load();
+      } else {
+        toast({ title: "Order failed", description: res.error, variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Order failed", description: err.message, variant: "destructive" });
+    } finally {
+      setPlacingOrder(false);
     }
   };
 
   const handleCancelOrder = async (orderId) => {
     setCancellingId(orderId);
-    await invoke("cancel_order", { order_id: orderId });
-    setCancellingId(null);
-    toast({ title: "Order cancelled" });
-    load();
+    try {
+      await invoke("cancel_order", { order_id: orderId });
+      toast({ title: "Order cancelled" });
+      load();
+    } catch (err) {
+      toast({ title: "Cancel failed", description: err.message, variant: "destructive" });
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   const handleClosePosition = async (symbol) => {
     if (!window.confirm(`Close entire ${symbol} position?`)) return;
     setClosingSymbol(symbol);
-    await invoke("close_position", { symbol });
-    setClosingSymbol(null);
-    toast({ title: `${symbol} position closed` });
-    load();
+    try {
+      await invoke("close_position", { symbol });
+      toast({ title: `${symbol} position closed` });
+      load();
+    } catch (err) {
+      toast({ title: "Close failed", description: err.message, variant: "destructive" });
+    } finally {
+      setClosingSymbol(null);
+    }
   };
 
   const equity = parseFloat(account?.equity || 0);
