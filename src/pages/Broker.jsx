@@ -72,10 +72,11 @@ export default function Broker() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!orderForm.symbol || !orderForm.qty) return;
+    const symbol = orderForm.symbol.trim().toUpperCase();
+    if (!symbol || !orderForm.qty) return;
     setPlacingOrder(true);
     try {
-      const res = await invoke("place_order", orderForm);
+      const res = await invoke("place_order", { ...orderForm, symbol });
       if (res.order) {
         toast({ title: "Order placed", description: `${orderForm.side.toUpperCase()} ${orderForm.qty} ${orderForm.symbol}` });
         setShowOrderForm(false);
@@ -404,7 +405,9 @@ export default function Broker() {
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setShowOrderForm(false)}>Cancel</Button>
-            <Button size="sm" onClick={handlePlaceOrder} disabled={placingOrder || !orderForm.symbol || !orderForm.qty}
+            <Button size="sm" onClick={handlePlaceOrder} disabled={placingOrder || !orderForm.symbol.trim() || !orderForm.qty ||
+              ((orderForm.type === "limit" || orderForm.type === "stop_limit") && !orderForm.limit_price) ||
+              ((orderForm.type === "stop" || orderForm.type === "stop_limit") && !orderForm.stop_price)}
               className={orderForm.side === "sell" ? "bg-destructive hover:bg-destructive/90" : ""}>
               {placingOrder ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
               {orderForm.side === "buy" ? "Buy" : "Sell"} {orderForm.symbol}
