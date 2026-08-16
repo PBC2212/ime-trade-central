@@ -269,6 +269,8 @@ For each opportunity output exactly:
   "time_horizon": "intraday|swing|position",
   "confidence_score": 0, "institutional_quality_score": 0,
   "risk_score": 0, "reward_score": 0, "liquidity_score": 0, "relative_strength_score": 0,
+
+IMPORTANT: ALL score fields MUST be on a 0-100 scale. risk_score (0-100, where 100 = highest risk) and reward_score (0-100, where 100 = highest reward). Do NOT use 1-10 scales.
   "entry_price": 0, "stop_loss": 0, "target_price": 0, "target_price_2": 0,
   "risk_reward_ratio": 0, "position_sizing": "", "primary_catalyst": "",
   "institutional_thesis": "4-5 sentences referencing the real indicator values provided",
