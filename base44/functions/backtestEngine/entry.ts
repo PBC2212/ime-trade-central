@@ -88,14 +88,14 @@ function checkSignal(
 ): Signal {
   if (!sma20[i] || !sma50[i] || !rsi[i] || !atr[i]) return null;
   if (strategy === 'trend_continuation') {
-    if (sma20[i]! > sma50[i]! && rsi[i]! > 40 && rsi[i]! < 65) return 'long';
+    if (sma20[i]! > sma50[i]! && rsi[i]! > 35 && rsi[i]! < 75) return 'long';
   }
   if (strategy === 'breakout') {
     const prevHigh = rollHigh[i];
-    if (prevHigh && closes[i] > prevHigh) return 'long';
+    if (prevHigh && closes[i] > prevHigh * 0.995) return 'long';
   }
   if (strategy === 'mean_reversion') {
-    if (rsi[i]! < 30) return 'long';
+    if (rsi[i]! < 45) return 'long';
   }
   return null;
 }
