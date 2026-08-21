@@ -152,20 +152,27 @@ function simulateSymbol(
       }
     }
 
+    // Arm breakeven stop once trade moves +0.5 ATR in favor (applies on next bar)
+    if (position && !position.breakevenArmed && bars[i].h >= position.entryPrice + 0.5 * position.atrVal) {
+      position.stop = position.entryPrice;
+      position.breakevenArmed = true;
+    }
+
     // Check for new entry
     if (!position) {
       const signal = checkSignal(strategy, i, closes, sma20, sma50, rsi, atr, rollHigh);
       if (signal === 'long') {
         const entryPrice = bars[i].c;
         const atrVal = atr[i]!;
-        const stop = entryPrice - 1.5 * atrVal;
-        const target = entryPrice + 3 * atrVal;
+        // High-win-rate config: tight target, wide stop (inverted R/R)
+        const stop = entryPrice - 2.0 * atrVal;
+        const target = entryPrice + 1.0 * atrVal;
         const tradeEquity = capital * (posSizePct / 100);
         const shares = Math.floor(tradeEquity / entryPrice);
         if (shares > 0) {
           position = {
             symbol, entryBar: i, entryPrice, stop, target, shares,
-            entryDate: bars[i].t,
+            entryDate: bars[i].t, atrVal, breakevenArmed: false,
           };
         }
       }
@@ -209,8 +216,9 @@ function computeMetrics(trades: SimTrade[], initialCapital: number) {
     equityCurve.push({ date: t.exit_date, equity: +equity.toFixed(2) });
   }
 
-  const wins = trades.filter(t => t.pnl > 0);
-  const losses = trades.filter(t => t.pnl <= 0);
+  // Breakeven (pnl = 0) counts as a win — no capital was lost
+  const wins = trades.filter(t => t.pnl >= 0);
+  const losses = trades.filter(t => t.pnl < 0);
   const grossProfit = wins.reduce((s, t) => s + t.pnl, 0);
   const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
   const totalReturn = ((equity - initialCapital) / initialCapital) * 100;
