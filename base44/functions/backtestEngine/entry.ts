@@ -164,9 +164,9 @@ function simulateSymbol(
       if (signal === 'long') {
         const entryPrice = bars[i].c;
         const atrVal = atr[i]!;
-        // High-win-rate config: tight target, wide stop (inverted R/R)
-        const stop = entryPrice - 2.0 * atrVal;
-        const target = entryPrice + 1.0 * atrVal;
+        // Balanced R/R: 1 ATR stop, 1.5 ATR target — favors expectancy over win rate
+        const stop = entryPrice - 1.0 * atrVal;
+        const target = entryPrice + 1.5 * atrVal;
         const tradeEquity = capital * (posSizePct / 100);
         const shares = Math.floor(tradeEquity / entryPrice);
         if (shares > 0) {
@@ -216,9 +216,8 @@ function computeMetrics(trades: SimTrade[], initialCapital: number) {
     equityCurve.push({ date: t.exit_date, equity: +equity.toFixed(2) });
   }
 
-  // Breakeven (pnl = 0) counts as a win — no capital was lost
-  const wins = trades.filter(t => t.pnl >= 0);
-  const losses = trades.filter(t => t.pnl < 0);
+  const wins = trades.filter(t => t.pnl > 0);
+  const losses = trades.filter(t => t.pnl <= 0);
   const grossProfit = wins.reduce((s, t) => s + t.pnl, 0);
   const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
   const totalReturn = ((equity - initialCapital) / initialCapital) * 100;
