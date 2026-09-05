@@ -40,7 +40,7 @@ export default function Layout() {
           </div>
           {!collapsed && (
             <div>
-              <div className="text-xs font-bold text-foreground tracking-widest uppercase">AlphaDesk</div>
+              <div className="text-xs font-bold text-foreground tracking-widest uppercase">IME Alpha Desk</div>
               <div className="text-[9px] text-muted-foreground tracking-widest uppercase">Institutional</div>
             </div>
           )}
